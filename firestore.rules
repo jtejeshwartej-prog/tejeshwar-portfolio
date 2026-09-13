@@ -1,0 +1,98 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------
+    // Only this exact, verified Google account may write anything.
+    // Everything else in these rules is public read of published
+    // content, or narrow, write-only public actions (contact form).
+    // ---------------------------------------------------------------
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'jtejeshwartej@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function isPublished() {
+      return resource.data.published == true;
+    }
+
+    // Content collections: projects, media, documents, videos,
+    // presentations, models, animations, gallery, skills, achievements.
+    // Each gets the same rule: public can read published docs,
+    // only the admin can create/update/delete or read drafts.
+    match /projects/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /media/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /documents/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /videos/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /presentations/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /models3d/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /animations/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /gallery/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /skills/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    match /achievements/{docId} {
+      allow read: if isPublished() || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Singleton content documents: hero/about/home copy, social links, resume pointer
+    match /portfolio/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Contact messages: anyone can create one message, nobody but
+    // admin can read, list, edit or delete them.
+    match /messages/{messageId} {
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'subject', 'message', 'createdAt', 'read'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
+        && request.resource.data.email is string && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && request.resource.data.subject is string && request.resource.data.subject.size() < 300
+        && request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() < 5000
+        && request.resource.data.read == false;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Admin user record (metadata only, never used for authorization)
+    match /users/{uid} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
